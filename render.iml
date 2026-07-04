@@ -1,12 +1,23 @@
-<?xml version="1.0" encoding="UTF-8"?>
-<module type="PYTHON_MODULE" version="4">
-  <component name="NewModuleRootManager">
-    <content url="file://$MODULE_DIR$" />
-    <orderEntry type="jdk" jdkName="Python 3.12 (render)" jdkType="Python SDK" />
-    <orderEntry type="sourceFolder" forTests="false" />
-  </component>
-  <component name="PyDocumentationSettings">
-    <option name="format" value="PLAIN" />
-    <option name="myDocStringFormat" value="Plain" />
-  </component>
-</module>
+databases:
+  - name: dam-db
+    plan: free
+    databaseName: dam_db
+
+services:
+  - type: web
+    name: ca-administration
+    env: python
+    buildCommand: "pip install --upgrade pip setuptools wheel && pip install -r requirements.txt"
+    startCommand: "PYTHONPATH=DaM/backend python -c 'from database import init_db; init_db()' && gunicorn --chdir DaM/backend -w 4 -b 0.0.0.0:$PORT 'app:create_app()'"
+    plan: free
+    envVars:
+      - key: DATABASE_URL
+        fromDatabase:
+          name: dam-db
+          property: connectionString
+      - key: JWT_SECRET
+        generateValue: true
+      - key: PORT
+        value: 5000
+      - key: PYTHON_VERSION
+        value: 3.11.8
