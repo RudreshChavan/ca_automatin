@@ -1,0 +1,21 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/tinymce/6.8.3/tinymce.min.js"></script>
+</head>
+<body>
+    <h1>TinyMCE Test</h1>
+    <textarea id="editor">Hello World</textarea>
+    <script>
+        tinymce.init({
+            selector: '#editor',
+            promotion: false,
+            branding: false,
+            height: 500,
+            plugins: 'preview searchreplace autolink directionality code visualblocks visualchars fullscreen image link media codesample table charmap pagebreak nonbreaking anchor insertdatetime advlist lists wordcount help emoticons',
+            toolbar: 'undo redo | blocks fontfamily fontsize | bold italic underline strikethrough | alignleft aligncenter alignright alignjustify | outdent indent | numlist bullist | forecolor backcolor removeformat | pagebreak | charmap emoticons | fullscreen preview print | image media table link | ltr rtl',
+            content_style: 'body { font-family: "Times New Roman", Times, serif; font-size: 16px; padding: 40px; margin: 0 auto; max-width: 800px; background: white; box-shadow: 0 2px 10px rgba(0,0,0,0.1); min-height: 800px; }',
+        });
+    </script>
+</body>
+</html>

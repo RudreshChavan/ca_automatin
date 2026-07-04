@@ -1,0 +1,97 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CA Billing Dashboard — Track revenue, manage client billing.">
+    <title>Billing Dashboard — CA Administration</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="manifest" href="manifest.json">
+    <meta name="theme-color" content="#6C5CE7">
+</head>
+<body>
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+    <div class="dashboard">
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header"><h1>💰 Billing</h1><p>Financial Dashboard</p></div>
+            <nav class="sidebar-nav">
+                <div class="sidebar-section-title">Views</div>
+                <button class="sidebar-item active" id="nav-overview" onclick="switchBillingView('overview',this)"><span class="icon">📊</span><span>Overview</span></button>
+                <button class="sidebar-item" id="nav-clients" onclick="switchBillingView('clients',this)"><span class="icon">👥</span><span>Client Billing</span></button>
+                <button class="sidebar-item" id="nav-revenue" onclick="switchBillingView('revenue',this)"><span class="icon">📈</span><span>Revenue</span></button>
+                <div class="sidebar-section-title" style="margin-top:var(--sp-6);">Quick Links</div>
+                <a href="/admin" class="sidebar-item"><span class="icon">⚙</span><span>Admin Panel</span></a>
+                <a href="/dashboard" class="sidebar-item"><span class="icon">🏠</span><span>Dashboard</span></a>
+            </nav>
+            <div class="sidebar-footer">
+                <div class="user-info"><div class="user-avatar" id="user-avatar">A</div><div class="details"><div class="name" id="user-name">Admin</div><div class="email" id="user-email">admin@email.com</div></div></div>
+                <button class="btn btn-ghost btn-sm logout-btn" onclick="logout()">↩ Sign Out</button>
+            </div>
+        </aside>
+        <main class="main-content">
+            <div class="top-bar">
+                <div style="display:flex;align-items:center;gap:12px;"><button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button><h2 id="page-title">Billing Dashboard</h2></div>
+                <div class="top-actions">
+                    <button class="btn btn-primary btn-sm" onclick="showAddServiceModal()">+ Add Charge</button>
+                    <button class="btn btn-secondary btn-sm" onclick="showRecordPaymentModal()">💵 Record Payment</button>
+                </div>
+            </div>
+            <!-- Overview -->
+            <div class="billing-view active" id="view-overview">
+                <div class="stats-grid">
+                    <div class="stat-card purple"><div class="stat-icon">💰</div><div class="stat-value" id="stat-total-billed">₹0</div><div class="stat-label">Total Billed</div></div>
+                    <div class="stat-card green"><div class="stat-icon">✅</div><div class="stat-value" id="stat-collected">₹0</div><div class="stat-label">Collected</div></div>
+                    <div class="stat-card amber"><div class="stat-icon">⏳</div><div class="stat-value" id="stat-outstanding">₹0</div><div class="stat-label">Outstanding</div></div>
+                    <div class="stat-card red"><div class="stat-icon">📅</div><div class="stat-value" id="stat-this-month">₹0</div><div class="stat-label">This Month</div></div>
+                </div>
+                <div class="admin-section"><div class="section-header"><h3>📈 Monthly Revenue</h3></div><div class="revenue-chart" id="revenue-chart"></div></div>
+                <div class="admin-section"><div class="section-header"><h3>💵 Recent Payments</h3></div>
+                    <div class="admin-table-wrapper"><table class="admin-table"><thead><tr><th>Client</th><th>Amount</th><th>Method</th><th>Status</th><th>Date</th></tr></thead><tbody id="recent-payments-tbody"><tr><td colspan="5" class="table-empty">Loading...</td></tr></tbody></table></div>
+                </div>
+            </div>
+            <!-- Client Billing -->
+            <div class="billing-view" id="view-clients">
+                <div class="admin-section"><div class="section-header"><h3>👥 Client-wise Billing</h3></div>
+                    <div class="admin-table-wrapper"><table class="admin-table"><thead><tr><th>Client</th><th>Total Billed</th><th>Paid</th><th>Pending</th><th>Services</th><th>Actions</th></tr></thead><tbody id="client-billing-tbody"><tr><td colspan="6" class="table-empty">Loading...</td></tr></tbody></table></div>
+                </div>
+            </div>
+            <!-- Revenue -->
+            <div class="billing-view" id="view-revenue">
+                <div class="admin-section"><div class="section-header"><h3>📈 Monthly Revenue Breakdown</h3></div>
+                    <div class="admin-table-wrapper"><table class="admin-table"><thead><tr><th>Month</th><th>Total</th><th>Collected</th><th>Outstanding</th><th>Services</th></tr></thead><tbody id="revenue-tbody"><tr><td colspan="5" class="table-empty">Loading...</td></tr></tbody></table></div>
+                </div>
+            </div>
+        </main>
+    </div>
+    <div class="toast-container" id="toast-container"></div>
+    <!-- Add Service Modal -->
+    <div class="modal-overlay" id="add-service-modal">
+        <div class="modal" style="max-width:520px;"><h3>Add Service Charge</h3>
+            <form id="add-service-form" onsubmit="handleAddService(event)" style="display:flex;flex-direction:column;gap:var(--sp-4);margin-top:var(--sp-4);">
+                <div class="input-group"><label>Client</label><select id="service-client" required style="width:100%;padding:var(--sp-3);background:var(--bg-secondary);border:1px solid var(--border-default);border-radius:var(--radius-md);color:var(--text-primary);font-family:inherit;"><option value="">Select client...</option></select></div>
+                <div class="input-group"><label>Service</label><select id="service-name" required style="width:100%;padding:var(--sp-3);background:var(--bg-secondary);border:1px solid var(--border-default);border-radius:var(--radius-md);color:var(--text-primary);font-family:inherit;"><option value="">Select...</option><option>GST Filing</option><option>ITR Filing</option><option>TDS Return</option><option>Audit</option><option>ROC Filing</option><option>Bookkeeping</option><option>Payroll Processing</option><option>Consultation</option><option>Other</option></select></div>
+                <div class="input-group"><label>Amount (₹)</label><input type="number" id="service-amount" placeholder="5000" required min="1" step="0.01"></div>
+                <div class="input-group"><label>Period</label><input type="text" id="service-period" placeholder="e.g. April 2026"></div>
+                <div class="input-group"><label>Notes</label><textarea id="service-notes" rows="2" placeholder="Notes..." style="width:100%;padding:var(--sp-3);border-radius:var(--radius-md);border:1px solid var(--border-default);background:var(--bg-secondary);color:var(--text-primary);font-family:inherit;resize:vertical;"></textarea></div>
+                <div class="modal-actions"><button type="button" class="btn btn-secondary btn-sm" onclick="closeAddServiceModal()">Cancel</button><button type="submit" class="btn btn-primary btn-sm">Add Charge</button></div>
+            </form>
+        </div>
+    </div>
+    <!-- Record Payment Modal -->
+    <div class="modal-overlay" id="record-payment-modal">
+        <div class="modal" style="max-width:520px;"><h3>Record Payment</h3>
+            <form id="record-payment-form" onsubmit="handleRecordPayment(event)" style="display:flex;flex-direction:column;gap:var(--sp-4);margin-top:var(--sp-4);">
+                <div class="input-group"><label>Client</label><select id="payment-client" required style="width:100%;padding:var(--sp-3);background:var(--bg-secondary);border:1px solid var(--border-default);border-radius:var(--radius-md);color:var(--text-primary);font-family:inherit;"><option value="">Select client...</option></select></div>
+                <div class="input-group"><label>Amount (₹)</label><input type="number" id="payment-amount" placeholder="10000" required min="1" step="0.01"></div>
+                <div class="input-group"><label>Method</label><select id="payment-method" style="width:100%;padding:var(--sp-3);background:var(--bg-secondary);border:1px solid var(--border-default);border-radius:var(--radius-md);color:var(--text-primary);font-family:inherit;"><option value="bank">Bank Transfer</option><option value="upi">UPI</option><option value="cash">Cash</option><option value="cheque">Cheque</option><option value="card">Card</option></select></div>
+                <div class="input-group"><label>Reference ID</label><input type="text" id="payment-reference" placeholder="TXN123456"></div>
+                <div class="input-group"><label>Status</label><select id="payment-status" style="width:100%;padding:var(--sp-3);background:var(--bg-secondary);border:1px solid var(--border-default);border-radius:var(--radius-md);color:var(--text-primary);font-family:inherit;"><option value="received">Received</option><option value="pending">Pending</option></select></div>
+                <div class="input-group"><label>Description</label><input type="text" id="payment-desc" placeholder="GST Filing Q1 Payment"></div>
+                <div class="modal-actions"><button type="button" class="btn btn-secondary btn-sm" onclick="closeRecordPaymentModal()">Cancel</button><button type="submit" class="btn btn-primary btn-sm">Record Payment</button></div>
+            </form>
+        </div>
+    </div>
+    <script src="js/api.js"></script>
+    <script src="js/billing.js"></script>
+</body>
+</html>

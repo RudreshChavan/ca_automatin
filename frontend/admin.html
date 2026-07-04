@@ -1,0 +1,679 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CA Administration Panel — Manage users, monitor files, assign tasks, and track system usage.">
+    <title>CA Admin Panel</title>
+    <link rel="stylesheet" href="css/style.css">
+    <!-- SheetJS for Excel Editing -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <!-- Mammoth.js for Word Document Viewing -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="dashboard">
+        <!-- ═══ Sidebar ═══ -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>⚙ CA Admin</h1>
+                <p>Management Panel</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section-title">Navigation</div>
+                <button class="sidebar-item active" id="nav-dashboard" onclick="switchView('dashboard', this)">
+                    <span class="icon">📊</span>
+                    <span>Dashboard</span>
+                </button>
+                <button class="sidebar-item" id="nav-users" onclick="switchView('users', this)">
+                    <span class="icon">👥</span>
+                    <span>Users</span>
+                    <span class="badge" id="badge-users">0</span>
+                </button>
+                <button class="sidebar-item" id="nav-files" onclick="switchView('files', this)">
+                    <span class="icon">📋</span>
+                    <span>File Monitor</span>
+                    <span class="badge" id="badge-files">0</span>
+                </button>
+                <button class="sidebar-item" id="nav-pending" onclick="switchView('pending', this)">
+                    <span class="icon">⏳</span>
+                    <span>Pending Review</span>
+                    <span class="badge" id="badge-pending" style="background: var(--warning-400);">0</span>
+                </button>
+                <button class="sidebar-item" id="nav-tasks" onclick="switchView('tasks', this)">
+                    <span class="icon">📝</span>
+                    <span>Tasks</span>
+                </button>
+                <button class="sidebar-item" id="nav-completed" onclick="switchView('completed', this)">
+                    <span class="icon">✅</span>
+                    <span>Completed Tasks</span>
+                </button>
+
+                <div class="sidebar-section-title" style="margin-top: var(--sp-6);">Finance</div>
+                <button class="sidebar-item" id="nav-payments" onclick="switchView('payments', this)">
+                    <span class="icon">💵</span>
+                    <span>Payments</span>
+                    <span class="badge" id="badge-payments" style="background:var(--warning-400);color:#000">0</span>
+                </button>
+                <a href="/billing" class="sidebar-item">
+                    <span class="icon">📊</span>
+                    <span>Billing Dashboard</span>
+                </a>
+                <button class="sidebar-item" id="nav-storage" onclick="switchView('storage', this)">
+                    <span class="icon">💾</span>
+                    <span>Storage</span>
+                </button>
+                <button class="sidebar-item" id="nav-sharing" onclick="switchView('sharing', this)">
+                    <span class="icon">🔗</span>
+                    <span>File Sharing</span>
+                    <span class="badge" id="badge-sharing">0</span>
+                </button>
+
+                <div class="sidebar-section-title" style="margin-top: var(--sp-6);">Quick Links</div>
+                <a href="/classify" class="sidebar-item">
+                    <span class="icon">🤖</span>
+                    <span>Doc Classifier</span>
+                </a>
+                <a href="/workspace" class="sidebar-item">
+                    <span class="icon">📑</span>
+                    <span>Workspace</span>
+                </a>
+                <a href="/dashboard" class="sidebar-item">
+                    <span class="icon">🏠</span>
+                    <span>My Dashboard</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">A</div>
+                    <div class="details">
+                        <div class="name" id="user-name">Admin</div>
+                        <div class="email" id="user-email">admin@email.com</div>
+                    </div>
+                </div>
+                <button class="btn btn-ghost btn-sm logout-btn" onclick="logout()">
+                    ↩ Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- ═══ Main Content ═══ -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                    <h2 id="page-title">Admin Dashboard</h2>
+                </div>
+                <div class="top-actions" id="top-actions">
+                    <!-- Notification Bell -->
+                    <div style="position: relative;">
+                        <button class="notification-bell" id="admin-notif-bell" onclick="toggleAdminNotifDropdown()">
+                            🔔
+                            <span class="notif-badge hidden" id="admin-notif-badge">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="admin-notif-dropdown">
+                            <div class="notif-header">
+                                <h4>Notifications</h4>
+                                <button onclick="markAllAdminNotifsRead()">Mark all read</button>
+                            </div>
+                            <div class="notif-list" id="admin-notif-list">
+                                <div class="notif-empty">No notifications yet</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Dashboard View ═══ -->
+            <div class="admin-view active" id="view-dashboard">
+
+                <div class="stats-grid" id="admin-stats-grid">
+                    <div class="stat-card purple">
+                        <div class="stat-icon">👥</div>
+                        <div class="stat-value" id="stat-users">0</div>
+                        <div class="stat-label">Total Users</div>
+                    </div>
+                    <div class="stat-card green">
+                        <div class="stat-icon">📄</div>
+                        <div class="stat-value" id="stat-files">0</div>
+                        <div class="stat-label">Total Files</div>
+                    </div>
+                    <div class="stat-card amber">
+                        <div class="stat-icon">💾</div>
+                        <div class="stat-value" id="stat-storage">0 B</div>
+                        <div class="stat-label">Storage Used</div>
+                    </div>
+                    <div class="stat-card red">
+                        <div class="stat-icon">⏳</div>
+                        <div class="stat-value" id="stat-pending">0</div>
+                        <div class="stat-label">Pending Review</div>
+                    </div>
+                </div>
+
+                <!-- Files per user breakdown -->
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h3>📊 Files Per User</h3>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table" id="per-user-table">
+                            <thead>
+                                <tr>
+                                    <th>User</th>
+                                    <th>Files</th>
+                                    <th>Storage</th>
+                                </tr>
+                            </thead>
+                            <tbody id="per-user-tbody">
+                                <tr><td colspan="3" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+
+                <!-- Recent uploads table -->
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h3>📋 Recent Uploads (Metadata Only)</h3>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table" id="recent-table">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Type</th>
+                                    <th>Size</th>
+                                    <th>Uploaded By</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="recent-tbody">
+                                <tr><td colspan="5" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Users View ═══ -->
+            <div class="admin-view" id="view-users">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h3>👥 All Users</h3>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateUserModal()">
+                            + Create User
+                        </button>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table" id="users-table">
+                            <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>Name</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Files</th>
+                                    <th>Storage</th>
+                                    <th>Joined</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="users-tbody">
+                                <tr><td colspan="8" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ User Details View ═══ -->
+            <div class="admin-view" id="view-user-details">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <div style="display: flex; align-items: center; gap: var(--sp-4);">
+                            <button class="btn btn-secondary btn-sm" onclick="switchView('users', document.getElementById('nav-users'))">← Back</button>
+                            <h3 id="details-user-name">User Details</h3>
+                        </div>
+                        <button class="btn btn-primary btn-sm" onclick="showAssignTaskModal()">📝 Assign Task</button>
+                    </div>
+
+                    <div class="stats-grid" style="margin-bottom: var(--sp-6);">
+                        <div class="stat-card green">
+                            <div class="stat-icon">📄</div>
+                            <div class="stat-value" id="detail-total-files">0</div>
+                            <div class="stat-label">Uploaded Files</div>
+                        </div>
+                        <div class="stat-card amber">
+                            <div class="stat-icon">💾</div>
+                            <div class="stat-value" id="detail-total-storage">0 B</div>
+                            <div class="stat-label">Storage Used</div>
+                        </div>
+                        <div class="stat-card purple">
+                            <div class="stat-icon">📝</div>
+                            <div class="stat-value" id="detail-total-tasks">0</div>
+                            <div class="stat-label">Pending Tasks</div>
+                        </div>
+                    </div>
+
+                    <div class="section-header">
+                        <h3>📋 User's Files</h3>
+                        <span class="file-count-badge" id="detail-files-count">0 files</span>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table" id="detail-files-table">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Type</th>
+                                    <th>Size</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="detail-files-tbody">
+                                <tr><td colspan="5" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+
+                    <!-- User Folders Section -->
+                    <div class="section-header" style="margin-top: var(--sp-6);">
+                        <h3>📁 User Folders</h3>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateFolderModal()">+ Create Folder</button>
+                    </div>
+                    <div class="folder-grid" id="detail-folder-grid">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Files View — Folder Browser ═══ -->
+            <div class="admin-view" id="view-files">
+                <div class="admin-section">
+
+                    <!-- Breadcrumb + Filters -->
+                    <div class="breadcrumb-nav" id="file-breadcrumb">
+                        <span class="breadcrumb-current">📂 All Folders</span>
+                    </div>
+
+                    <div class="section-header" id="files-view-header">
+                        <div style="display: flex; align-items: center; gap: var(--sp-4); flex-wrap: wrap;">
+                            <h3 id="files-view-title">📂 All Folders</h3>
+                            <div class="admin-filter-bar" id="folder-files-filter-bar" style="display: none;">
+                                <select id="file-status-filter" onchange="loadFolderFiles(currentAdminFolderId)">
+                                    <option value="">All Status</option>
+                                    <option value="pending">⏳ Pending</option>
+                                    <option value="reviewed">✅ Reviewed</option>
+                                </select>
+                                <div class="search-bar" style="width: 250px;">
+                                    <span class="search-icon">🔍</span>
+                                    <input type="text" id="admin-file-search" placeholder="Search files..." oninput="handleAdminFileSearch()">
+                                </div>
+                            </div>
+                        </div>
+                        <span class="file-count-badge" id="admin-files-count">0 folders</span>
+                    </div>
+
+                    <!-- Folder Grid (all folders) -->
+                    <div class="folder-browser-grid" id="admin-folder-grid">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <!-- File Cards Grid (inside a specific folder) -->
+                    <div class="folder-files-grid" id="admin-folder-files-grid" style="display: none;">
+                        <!-- Dynamically populated -->
+                    </div>
+
+                    <div class="empty-state" id="folder-files-empty" style="display: none;">
+                        <div class="empty-icon">📂</div>
+                        <h3>No files in this folder</h3>
+                        <p>Files will appear here when users upload them</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ All Tasks View ═══ -->
+            <div class="admin-view" id="view-tasks">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h3>📝 All Assigned Tasks</h3>
+                        <button class="btn btn-primary btn-sm" onclick="showAssignTaskModal()">+ Assign Task</button>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table" id="all-tasks-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Assigned To</th>
+                                    <th>Status</th>
+                                    <th>Assigned On</th>
+                                    <th>Completed On</th>
+                                </tr>
+                            </thead>
+                            <tbody id="all-tasks-tbody">
+                                <tr><td colspan="5" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Completed Tasks View ═══ -->
+            <div class="admin-view" id="view-completed">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h3>✅ Completed Tasks</h3>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table" id="completed-tasks-table">
+                            <thead>
+                                <tr>
+                                    <th>Title</th>
+                                    <th>Completed By</th>
+                                    <th>Description</th>
+                                    <th>Assigned On</th>
+                                    <th>Completed On</th>
+                                </tr>
+                            </thead>
+                            <tbody id="completed-tasks-tbody">
+                                <tr><td colspan="5" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Pending Review View ═══ -->
+            <div class="admin-view" id="view-pending">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h3>⏳ Pending Review</h3>
+                            <span class="file-count-badge" id="pending-files-count" style="background: var(--warning-400); color: #000;">0</span>
+                        </div>
+                    </div>
+                    <div class="pending-cards-grid" id="pending-cards-grid"></div>
+                    <div class="empty-state" id="pending-empty" style="display: none;">
+                        <div class="empty-icon">🎉</div>
+                        <h3>All caught up!</h3>
+                        <p>No files pending review</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Payments View ═══ -->
+            <div class="admin-view" id="view-payments">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h3>💵 Payment Tracking</h3>
+                        <div style="display:flex;gap:8px;align-items:center;">
+                            <select id="payment-filter" onchange="loadAdminPayments()" style="padding:var(--sp-2) var(--sp-3);background:var(--bg-secondary);border:1px solid var(--border-default);border-radius:var(--radius-md);color:var(--text-primary);font-family:inherit;">
+                                <option value="">All Status</option>
+                                <option value="pending">⏳ Pending</option>
+                                <option value="received">✅ Received</option>
+                            </select>
+                            <button class="btn btn-primary btn-sm" onclick="showAdminRecordPaymentModal()">+ Record Payment</button>
+                        </div>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table"><thead><tr><th>Client</th><th>Amount</th><th>Description</th><th>Method</th><th>Status</th><th>Date</th><th>Actions</th></tr></thead>
+                            <tbody id="admin-payments-tbody"><tr><td colspan="7" class="table-empty">Loading...</td></tr></tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Storage View ═══ -->
+            <div class="admin-view" id="view-storage">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <h3>💾 Storage Management</h3>
+                        <span class="file-count-badge" id="storage-plan-info">1 TB Free per firm</span>
+                    </div>
+                    <div class="storage-cards-grid" id="storage-cards-grid"></div>
+                    <div class="empty-state" id="storage-empty" style="display: none;">
+                        <div class="empty-icon">💾</div>
+                        <h3>No users yet</h3>
+                        <p>Storage quotas will appear when users sign up</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ File Sharing View ═══ -->
+            <div class="admin-view" id="view-sharing">
+                <div class="admin-section">
+                    <div class="section-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h3>🔗 File Sharing</h3>
+                            <span class="file-count-badge" id="sharing-count">0 shares</span>
+                        </div>
+                    </div>
+                    <div class="admin-table-wrapper">
+                        <table class="admin-table" id="sharing-table">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Shared With</th>
+                                    <th>Role</th>
+                                    <th>Permission</th>
+                                    <th>Shared On</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="sharing-tbody">
+                                <tr><td colspan="6" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                    <div class="empty-state" id="sharing-empty" style="display: none;">
+                        <div class="empty-icon">🔗</div>
+                        <h3>No active shares</h3>
+                        <p>Share files with employees and clients from the File Monitor view</p>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Create User Modal -->
+    <div class="modal-overlay" id="create-user-modal">
+        <div class="modal" style="max-width: 520px;">
+            <h3>Create New User</h3>
+            <p style="margin-bottom: var(--sp-4);">Fill in the details to create a new user account.</p>
+
+            <div class="auth-error" id="create-user-error"></div>
+
+            <form id="create-user-form" onsubmit="handleCreateUser(event)" style="display: flex; flex-direction: column; gap: var(--sp-4);">
+                <div class="input-group">
+                    <label for="new-user-name">Full Name</label>
+                    <input type="text" id="new-user-name" placeholder="John Doe">
+                </div>
+                <div class="input-group">
+                    <label for="new-user-email">Email Address</label>
+                    <input type="email" id="new-user-email" placeholder="john@example.com" required>
+                </div>
+                <div class="input-group">
+                    <label for="new-user-password">Password</label>
+                    <input type="password" id="new-user-password" placeholder="Min 6 characters" required minlength="6">
+                </div>
+                <div class="input-group">
+                    <label for="new-user-role">Role</label>
+                    <select id="new-user-role" style="width: 100%; padding: var(--sp-3) var(--sp-4); background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.95rem;">
+                        <option value="user">User</option>
+                        <option value="admin">Admin</option>
+                    </select>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeCreateUserModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="create-user-btn">Create User</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Delete Confirmation Modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <h3 id="delete-modal-title">Confirm Delete</h3>
+            <p id="delete-modal-message">Are you sure? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary btn-sm" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger btn-sm" id="confirm-delete-btn" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Assign Task Modal -->
+    <div class="modal-overlay" id="assign-task-modal">
+        <div class="modal" style="max-width: 520px;">
+            <h3>Assign Task</h3>
+            <p style="margin-bottom: var(--sp-4);">Create and assign a task to a user. It will appear on their dashboard.</p>
+
+            <form id="assign-task-form" onsubmit="handleAssignTask(event)" style="display: flex; flex-direction: column; gap: var(--sp-4);">
+                <div class="input-group">
+                    <label for="task-user-select">Assign To</label>
+                    <select id="task-user-select" required style="width: 100%; padding: var(--sp-3) var(--sp-4); background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.95rem;">
+                        <option value="">Select a user...</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label for="task-title">Task Title</label>
+                    <input type="text" id="task-title" placeholder="e.g. Upload your tax returns" required>
+                </div>
+                <div class="input-group">
+                    <label for="task-description">Description (Optional)</label>
+                    <textarea id="task-description" rows="3" placeholder="Add more details about this task..." style="width: 100%; padding: var(--sp-3); border-radius: var(--radius-md); border: 1px solid var(--border-default); background: var(--bg-secondary); color: var(--text-primary); font-family: inherit; font-size: 0.95rem; resize: vertical;"></textarea>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeAssignTaskModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="assign-task-btn">Assign Task</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Create Folder Modal -->
+    <div class="modal-overlay" id="create-folder-modal">
+        <div class="modal">
+            <h3>Create Folder</h3>
+            <p style="margin-bottom: var(--sp-4);">Create a new folder for this client.</p>
+
+            <form id="create-folder-form" onsubmit="handleCreateFolder(event)" style="display: flex; flex-direction: column; gap: var(--sp-4);">
+                <div class="input-group">
+                    <label for="new-folder-name">Folder Name</label>
+                    <input type="text" id="new-folder-name" placeholder="e.g. GST 2024-25" required>
+                </div>
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeCreateFolderModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Create Folder</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- Share File Modal -->
+    <div class="modal-overlay" id="share-file-modal">
+        <div class="modal" style="max-width: 560px;">
+            <h3>🔗 Share File</h3>
+            <p style="margin-bottom: var(--sp-3);" id="share-modal-filename">Share this file with employees or clients.</p>
+
+            <form id="share-file-form" onsubmit="handleShareFile(event)" style="display: flex; flex-direction: column; gap: var(--sp-4);">
+                <div class="input-group">
+                    <label for="share-user-select">Share With</label>
+                    <select id="share-user-select" required style="width: 100%; padding: var(--sp-3) var(--sp-4); background: var(--bg-secondary); border: 1px solid var(--border-default); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.95rem;">
+                        <option value="">Select a user or employee...</option>
+                    </select>
+                </div>
+                <div class="input-group">
+                    <label>Permission Level</label>
+                    <div class="permission-radio-group" id="permission-radio-group">
+                        <label class="permission-option active" data-perm="view">
+                            <input type="radio" name="share-permission" value="view" checked>
+                            <span class="perm-icon">👁</span>
+                            <span class="perm-details">
+                                <strong>View Only</strong>
+                                <span>Can view the file but cannot edit or download</span>
+                            </span>
+                        </label>
+                        <label class="permission-option" data-perm="edit">
+                            <input type="radio" name="share-permission" value="edit">
+                            <span class="perm-icon">✏️</span>
+                            <span class="perm-details">
+                                <strong>Edit Access</strong>
+                                <span>Can view and edit the file content</span>
+                            </span>
+                        </label>
+                        <label class="permission-option" data-perm="download">
+                            <input type="radio" name="share-permission" value="download">
+                            <span class="perm-icon">⬇️</span>
+                            <span class="perm-details">
+                                <strong>Download</strong>
+                                <span>Can view, edit, and download the file</span>
+                            </span>
+                        </label>
+                    </div>
+                </div>
+
+                <!-- Active shares for this file -->
+                <div class="active-shares-section" id="active-shares-section" style="display: none;">
+                    <label style="font-weight: 600; font-size: 0.85rem; color: var(--text-secondary); margin-bottom: var(--sp-2); display: block;">Active Shares</label>
+                    <div class="active-shares-list" id="active-shares-list">
+                        <!-- Dynamically populated -->
+                    </div>
+                </div>
+
+                <div class="modal-actions">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeShareModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="share-file-btn">Share File</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══ Admin Override Classification Modal ═══ -->
+    <div class="modal-overlay" id="admin-override-modal">
+        <div class="modal-card" style="max-width: 480px;">
+            <h3 style="margin-bottom: var(--sp-2);">✏️ Override Classification</h3>
+            <p style="color: var(--text-secondary); font-size: 0.85rem; margin-bottom: var(--sp-4);">
+                Manually classify: <strong id="admin-override-file-name"></strong>
+            </p>
+
+            <div class="form-group" style="margin-bottom: var(--sp-4);">
+                <label style="font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; display: block;">Category</label>
+                <select id="admin-override-category" class="form-input" onchange="onAdminOverrideCategoryChange()">
+                    <option value="">Select category...</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: var(--sp-4);">
+                <label style="font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; display: block;">Sub-Category</label>
+                <select id="admin-override-subcategory" class="form-input">
+                    <option value="">Select sub-category...</option>
+                </select>
+            </div>
+
+            <div class="form-group" style="margin-bottom: var(--sp-5);">
+                <label style="font-size: 0.8rem; font-weight: 600; margin-bottom: 4px; display: block;">Financial Year (optional)</label>
+                <input type="text" id="admin-override-fy" class="form-input" placeholder="e.g. FY2024-25">
+            </div>
+
+            <div class="modal-actions">
+                <button type="button" class="btn btn-secondary btn-sm" onclick="closeAdminOverride()">Cancel</button>
+                <button type="button" class="btn btn-primary btn-sm" onclick="submitAdminOverride()">Apply Classification</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/admin.js"></script>
+</body>
+</html>

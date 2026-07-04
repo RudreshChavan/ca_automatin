@@ -1,0 +1,259 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="AI-Powered Document Classification — Analyze, categorize, and route CA documents automatically.">
+    <title>Document Classifier — AI Engine</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/classify.css">
+</head>
+<body>
+    <!-- Sidebar overlay for mobile -->
+    <div class="clf-sidebar-overlay" id="clf-sidebar-overlay" onclick="toggleClfSidebar()"></div>
+
+    <div class="classify-layout">
+        <!-- ═══ Sidebar ═══ -->
+        <aside class="classify-sidebar" id="clf-sidebar">
+            <div class="sidebar-header">
+                <h1>🤖 Classifier</h1>
+                <p>AI Document Engine</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="sidebar-item active" id="clf-nav-dashboard" onclick="switchClfView('dashboard', this)">
+                    <span>📊</span>
+                    <span>Dashboard</span>
+                </button>
+                <button class="sidebar-item" id="clf-nav-review" onclick="switchClfView('review', this)">
+                    <span>⚠️</span>
+                    <span>Review Queue</span>
+                    <span class="badge" id="clf-badge-review" style="background: var(--warning-400); color: #000;">0</span>
+                </button>
+                <button class="sidebar-item" id="clf-nav-logs" onclick="switchClfView('logs', this)">
+                    <span>📋</span>
+                    <span>All Classifications</span>
+                </button>
+                <button class="sidebar-item" id="clf-nav-categories" onclick="switchClfView('categories', this)">
+                    <span>🏷️</span>
+                    <span>Categories</span>
+                </button>
+
+                <div style="height: 1px; background: var(--border-default); margin: 16px 8px;"></div>
+
+                <a href="/admin" class="sidebar-item">
+                    <span>⚙</span>
+                    <span>Admin Panel</span>
+                </a>
+                <a href="/workspace" class="sidebar-item">
+                    <span>📑</span>
+                    <span>Workspace</span>
+                </a>
+                <a href="/dashboard" class="sidebar-item">
+                    <span>🏠</span>
+                    <span>Dashboard</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-item" style="cursor: default;">
+                    <span>👤</span>
+                    <span id="clf-user-email" style="font-size: 0.82rem;">Admin</span>
+                </div>
+                <button class="sidebar-item" onclick="logout()" style="color: var(--danger-400);">
+                    <span>↩</span>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ═══ Main Content ═══ -->
+        <main class="classify-main">
+            <!-- Top Bar -->
+            <div class="classify-topbar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="clf-mobile-menu" onclick="toggleClfSidebar()">☰</button>
+                    <h2 id="clf-page-title">Classification Dashboard</h2>
+                </div>
+                <div class="classify-topbar-actions">
+                    <button class="btn btn-ghost btn-sm" id="reclassify-all-btn" onclick="reclassifyAllFiles()">
+                        🔄 Re-classify All
+                    </button>
+                </div>
+            </div>
+
+            <!-- ═══ Dashboard View ═══ -->
+            <div class="clf-view active" id="clf-view-dashboard">
+                <!-- Stats -->
+                <div class="clf-stats-grid" id="clf-stats-grid">
+                    <div class="clf-stat-card purple">
+                        <div class="stat-icon">📄</div>
+                        <div class="stat-value" id="clf-stat-total">0</div>
+                        <div class="stat-label">Total Classified</div>
+                    </div>
+                    <div class="clf-stat-card amber">
+                        <div class="stat-icon">⚠️</div>
+                        <div class="stat-value" id="clf-stat-review">0</div>
+                        <div class="stat-label">Needs Review</div>
+                    </div>
+                    <div class="clf-stat-card green">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value" id="clf-stat-high-conf">0</div>
+                        <div class="stat-label">High Confidence</div>
+                    </div>
+                    <div class="clf-stat-card red">
+                        <div class="stat-icon">🔻</div>
+                        <div class="stat-value" id="clf-stat-low-conf">0</div>
+                        <div class="stat-label">Low Confidence</div>
+                    </div>
+                </div>
+
+                <!-- Category Distribution -->
+                <div class="clf-section">
+                    <div class="clf-section-header">
+                        <h3>🏷️ Category Distribution</h3>
+                    </div>
+                    <div class="category-dist-grid" id="clf-category-grid">
+                        <div class="clf-loading"><div class="clf-spinner"></div> Loading...</div>
+                    </div>
+                </div>
+
+                <!-- Recent Classifications -->
+                <div class="clf-section">
+                    <div class="clf-section-header">
+                        <h3>📋 Recent Classifications</h3>
+                    </div>
+                    <div class="clf-table-wrapper">
+                        <table class="clf-table" id="clf-recent-table">
+                            <thead>
+                                <tr>
+                                    <th>File</th>
+                                    <th>Category</th>
+                                    <th>Sub-Category</th>
+                                    <th>Confidence</th>
+                                    <th>User</th>
+                                    <th>Date</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clf-recent-tbody">
+                                <tr><td colspan="6" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Review Queue View ═══ -->
+            <div class="clf-view" id="clf-view-review" style="display: none;">
+                <div class="reclassify-progress" id="reclassify-progress">
+                    <div class="clf-spinner"></div>
+                    <span id="reclassify-progress-text">Re-classifying files...</span>
+                </div>
+
+                <div class="clf-section">
+                    <div class="clf-section-header">
+                        <div style="display: flex; align-items: center; gap: 8px;">
+                            <h3>⚠️ Manual Review Queue</h3>
+                            <span class="needs-review-badge" id="review-count-badge">0 files</span>
+                        </div>
+                    </div>
+                    <div class="review-cards-grid" id="review-cards-grid">
+                        <!-- Dynamically populated -->
+                    </div>
+                    <div class="clf-empty-state" id="review-empty" style="display: none;">
+                        <div class="empty-icon">🎉</div>
+                        <h3>All clear!</h3>
+                        <p>No files need manual review. All documents are classified with high confidence.</p>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ All Classifications View ═══ -->
+            <div class="clf-view" id="clf-view-logs" style="display: none;">
+                <div class="clf-section">
+                    <div class="clf-section-header">
+                        <h3>📋 All Classification Logs</h3>
+                        <div style="display: flex; gap: 8px; align-items: center;">
+                            <select id="clf-log-filter" onchange="loadClassificationLogs()" style="padding: var(--sp-2) var(--sp-3); background: var(--bg-surface); border: 1px solid var(--border-default); border-radius: var(--radius-md); color: var(--text-primary); font-family: inherit; font-size: 0.82rem;">
+                                <option value="">All Categories</option>
+                            </select>
+                        </div>
+                    </div>
+                    <div class="clf-table-wrapper">
+                        <table class="clf-table" id="clf-logs-table">
+                            <thead>
+                                <tr>
+                                    <th>File Name</th>
+                                    <th>Category</th>
+                                    <th>Sub-Category</th>
+                                    <th>FY</th>
+                                    <th>Confidence</th>
+                                    <th>Status</th>
+                                    <th>User</th>
+                                    <th>Date</th>
+                                    <th>Actions</th>
+                                </tr>
+                            </thead>
+                            <tbody id="clf-logs-tbody">
+                                <tr><td colspan="9" class="table-empty">Loading...</td></tr>
+                            </tbody>
+                        </table>
+                    </div>
+                </div>
+            </div>
+
+            <!-- ═══ Categories View ═══ -->
+            <div class="clf-view" id="clf-view-categories" style="display: none;">
+                <div class="clf-section">
+                    <div class="clf-section-header">
+                        <h3>🏷️ Classification Categories & Rules</h3>
+                    </div>
+                    <div id="clf-categories-list">
+                        <div class="clf-loading"><div class="clf-spinner"></div> Loading categories...</div>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ═══ Override Modal ═══ -->
+    <div class="clf-modal-overlay" id="override-modal">
+        <div class="clf-modal">
+            <div class="clf-modal-header">
+                <h3>✏️ Override Classification</h3>
+                <p id="override-modal-filename">Manually assign category and sub-category for this document.</p>
+            </div>
+            <form id="override-form" onsubmit="handleOverride(event)">
+                <div class="clf-modal-body">
+                    <div class="clf-input-group">
+                        <label for="override-category">Category</label>
+                        <select id="override-category" required onchange="updateSubCategoryOptions()">
+                            <option value="">Select category...</option>
+                        </select>
+                    </div>
+                    <div class="clf-input-group">
+                        <label for="override-subcategory">Sub-Category</label>
+                        <select id="override-subcategory" required>
+                            <option value="">Select sub-category...</option>
+                        </select>
+                    </div>
+                    <div class="clf-input-group">
+                        <label for="override-fy">Financial Year (optional)</label>
+                        <input type="text" id="override-fy" placeholder="e.g. FY2024-25">
+                    </div>
+                </div>
+                <div class="clf-modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeOverrideModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Classification</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/classify.js"></script>
+</body>
+</html>

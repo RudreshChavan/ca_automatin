@@ -1,0 +1,89 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>DaM Viewer & Editor</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/viewer.css">
+    
+    <!-- Core libs loaded immediately (lightweight) -->
+    <script src="https://cdn.sheetjs.com/xlsx-latest/package/dist/xlsx.full.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+
+    <!-- JSONEditor CSS (small) -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/jsoneditor/9.10.0/jsoneditor.min.css" rel="stylesheet" type="text/css">
+</head>
+<body>
+    <header class="viewer-header">
+        <div class="vh-left">
+            <div class="vh-icon" id="header-icon">📄</div>
+            <div class="vh-info">
+                <h2 id="header-filename">Loading...</h2>
+                <span id="header-meta">Please wait</span>
+            </div>
+        </div>
+        <div class="vh-center">
+            <span class="mode-badge" id="mode-badge">View Mode</span>
+        </div>
+        <div class="vh-right">
+            <button class="btn btn-primary" id="btn-save" style="display: none;" onclick="saveChanges()">Save Changes</button>
+            <button class="btn btn-ghost" onclick="window.close()">Close</button>
+        </div>
+    </header>
+
+    <main class="viewer-main">
+        <div id="loading-spinner" class="viewer-loading">
+            <div class="spinner"></div>
+            <p>Loading file...</p>
+        </div>
+        <div id="error-container" class="viewer-error" style="display: none;"></div>
+
+        <!-- Containers for different editors/viewers -->
+        <div id="image-container" class="editor-container" style="display: none;">
+            <img id="image-viewer" style="display: none;">
+            <div id="tui-image-editor" style="display: none;"></div>
+        </div>
+
+        <div id="pdf-container" class="editor-container" style="display: none;">
+            <iframe id="pdf-iframe" style="display: none;"></iframe>
+            <div id="pdf-annotation-wrapper" style="display: none; position: relative; overflow: auto; width: 100%; height: 100%; background: #525659; text-align: center;">
+                <div id="pdf-pages-container" style="display: inline-block;"></div>
+            </div>
+            <div id="pdf-toolbar" class="editor-toolbar" style="display: none;">
+                <button class="btn btn-sm" onclick="addPdfText()">Add Text</button>
+                <button class="btn btn-sm" onclick="addPdfHighlight()">Highlight</button>
+                <span style="font-size: 0.8rem; margin-left: 10px; color: var(--text-secondary);">Click on canvas to add. Scroll to navigate.</span>
+            </div>
+        </div>
+
+        <div id="spreadsheet-container" class="editor-container" style="display: none;">
+            <div id="spreadsheet-formula-bar" class="formula-bar" style="display: none; align-items: center;">
+                <span class="formula-cell-ref" id="formula-cell-ref">A1</span>
+                <input type="text" class="formula-input" id="formula-input" placeholder="Select a cell to edit..." spellcheck="false">
+                <span style="font-size: 0.8rem; margin-left: 10px; color: var(--text-secondary); white-space: nowrap;">💡 Double-click any cell to edit</span>
+            </div>
+            <div id="spreadsheet-tabs" class="editor-tabs"></div>
+            <div id="spreadsheet-grid" style="overflow: auto; flex: 1; padding: 10px;"></div>
+        </div>
+
+        <div id="document-container" class="editor-container" style="display: none;">
+            <div id="document-content" class="document-paper" contenteditable="true"></div>
+            <textarea id="document-content-textarea" style="display: none;"></textarea>
+        </div>
+
+        <div id="json-container" class="editor-container" style="display: none;">
+            <div id="jsoneditor" style="width: 100%; height: 100%;"></div>
+        </div>
+
+        <div id="text-container" class="editor-container" style="display: none;">
+            <textarea id="text-editor" spellcheck="false" readonly></textarea>
+        </div>
+    </main>
+
+    <!-- Scripts -->
+    <script src="https://cdn.ckeditor.com/ckeditor5/41.2.1/classic/ckeditor.js"></script>
+    <script src="js/api.js"></script>
+    <script src="js/viewer.js"></script>
+</body>
+</html>

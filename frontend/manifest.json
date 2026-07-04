@@ -1,0 +1,14 @@
+{
+  "name": "CA Administration",
+  "short_name": "CA Admin",
+  "description": "CA Administration — Manage files, track payments, and billing",
+  "start_url": "/dashboard",
+  "display": "standalone",
+  "background_color": "#0F1117",
+  "theme_color": "#6C5CE7",
+  "orientation": "any",
+  "icons": [
+    { "src": "data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='80' font-size='80'>📁</text></svg>", "sizes": "any", "type": "image/svg+xml" }
+  ],
+  "categories": ["business", "finance", "productivity"]
+}

@@ -1,0 +1,317 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="Workspace — Create, edit, manage, and share Word documents with clients.">
+    <title>Workspace — Document Hub</title>
+    <link rel="stylesheet" href="css/style.css">
+    <link rel="stylesheet" href="css/workspace.css">
+    <!-- Mammoth.js for Word Document preview -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/mammoth/1.6.0/mammoth.browser.min.js"></script>
+</head>
+<body>
+    <!-- Sidebar overlay for mobile -->
+    <div class="ws-sidebar-overlay" id="ws-sidebar-overlay" onclick="toggleWsSidebar()"></div>
+
+    <div class="workspace-layout">
+        <!-- ═══ Sidebar ═══ -->
+        <aside class="workspace-sidebar" id="ws-sidebar">
+            <div class="sidebar-header">
+                <h1>📑 Workspace</h1>
+                <p>Document Hub</p>
+            </div>
+
+            <nav class="sidebar-nav">
+                <button class="sidebar-item active" id="ws-nav-all" onclick="switchWsView('all', this)">
+                    <span>📄</span>
+                    <span>All Documents</span>
+                    <span class="ws-badge" id="ws-badge-all">0</span>
+                </button>
+                <button class="sidebar-item" id="ws-nav-drafts" onclick="switchWsView('drafts', this)">
+                    <span>📝</span>
+                    <span>Drafts</span>
+                    <span class="ws-badge amber" id="ws-badge-drafts">0</span>
+                </button>
+                <button class="sidebar-item" id="ws-nav-published" onclick="switchWsView('published', this)">
+                    <span>✅</span>
+                    <span>Published</span>
+                    <span class="ws-badge green" id="ws-badge-published">0</span>
+                </button>
+
+                <div style="height: 1px; background: var(--border-default); margin: 16px 8px;"></div>
+
+                <a href="/admin" class="sidebar-item">
+                    <span>⚙</span>
+                    <span>Admin Panel</span>
+                </a>
+                <a href="/dashboard" class="sidebar-item">
+                    <span>🏠</span>
+                    <span>Dashboard</span>
+                </a>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="sidebar-item" style="cursor: default;">
+                    <span>👤</span>
+                    <span id="ws-user-email" style="font-size: 0.82rem;">Admin</span>
+                </div>
+                <button class="sidebar-item" onclick="logout()" style="color: var(--error-400);">
+                    <span>↩</span>
+                    <span>Sign Out</span>
+                </button>
+            </div>
+        </aside>
+
+        <!-- ═══ Main Content ═══ -->
+        <main class="workspace-main">
+            <!-- Top Bar -->
+            <div class="workspace-topbar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="ws-mobile-menu" onclick="toggleWsSidebar()">☰</button>
+                    <h2 id="ws-page-title">All Documents</h2>
+                </div>
+                <div class="workspace-topbar-actions">
+                    <button class="btn btn-ghost btn-sm" onclick="showUploadModal()">⬆ Upload</button>
+                    <button class="btn btn-primary btn-sm" onclick="showCreateModal()">+ New Document</button>
+                </div>
+            </div>
+
+            <!-- Body -->
+            <div class="workspace-body">
+                <!-- Stats -->
+                <div class="ws-stats-grid" id="ws-stats-grid">
+                    <div class="ws-stat-card purple">
+                        <div class="stat-icon">📄</div>
+                        <div class="stat-value" id="ws-stat-total">0</div>
+                        <div class="stat-label">Total Documents</div>
+                    </div>
+                    <div class="ws-stat-card amber">
+                        <div class="stat-icon">📝</div>
+                        <div class="stat-value" id="ws-stat-drafts">0</div>
+                        <div class="stat-label">Drafts</div>
+                    </div>
+                    <div class="ws-stat-card green">
+                        <div class="stat-icon">✅</div>
+                        <div class="stat-value" id="ws-stat-published">0</div>
+                        <div class="stat-label">Published</div>
+                    </div>
+                    <div class="ws-stat-card blue">
+                        <div class="stat-icon">🔗</div>
+                        <div class="stat-value" id="ws-stat-shares">0</div>
+                        <div class="stat-label">Active Shares</div>
+                    </div>
+                    <div class="ws-stat-card rose">
+                        <div class="stat-icon">💾</div>
+                        <div class="stat-value" id="ws-stat-size">0 B</div>
+                        <div class="stat-label">Total Size</div>
+                    </div>
+                </div>
+
+                <!-- Filters -->
+                <div class="ws-filter-bar">
+                    <div class="ws-search-box">
+                        <span class="search-icon">🔍</span>
+                        <input type="text" id="ws-search" placeholder="Search documents..." oninput="handleWsSearch()">
+                    </div>
+                    <select class="ws-filter-select" id="ws-status-filter" onchange="loadDocuments()">
+                        <option value="">All Status</option>
+                        <option value="draft">📝 Drafts</option>
+                        <option value="published">✅ Published</option>
+                    </select>
+                </div>
+
+                <!-- Document Grid -->
+                <div class="ws-doc-grid" id="ws-doc-grid">
+                    <!-- Dynamically populated -->
+                </div>
+
+                <!-- Empty State -->
+                <div class="ws-empty-state" id="ws-empty-state" style="display: none;">
+                    <div class="ws-empty-icon">📑</div>
+                    <h3>No documents yet</h3>
+                    <p>Create your first document or upload an existing Word file to get started.</p>
+                    <div style="display: flex; gap: 10px;">
+                        <button class="btn btn-ghost btn-sm" onclick="showUploadModal()">⬆ Upload</button>
+                        <button class="btn btn-primary btn-sm" onclick="showCreateModal()">+ New Document</button>
+                    </div>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- ═══ Create Document Modal ═══ -->
+    <div class="ws-modal-overlay" id="create-doc-modal">
+        <div class="ws-modal">
+            <div class="ws-modal-header">
+                <h3>📄 Create New Document</h3>
+                <p>Create a blank Word document in the workspace.</p>
+            </div>
+            <form id="create-doc-form" onsubmit="handleCreateDocument(event)">
+                <div class="ws-modal-body">
+                    <div class="ws-input-group">
+                        <label for="new-doc-title">Document Title *</label>
+                        <input type="text" id="new-doc-title" placeholder="e.g. Tax Report Q1 2025" required>
+                    </div>
+                    <div class="ws-input-group">
+                        <label for="new-doc-description">Description</label>
+                        <textarea id="new-doc-description" rows="3" placeholder="Optional description for this document..."></textarea>
+                    </div>
+                    <div class="ws-input-group">
+                        <label for="new-doc-status">Initial Status</label>
+                        <select id="new-doc-status">
+                            <option value="draft">📝 Draft</option>
+                            <option value="published">✅ Published</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ws-modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeCreateModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="create-doc-btn">Create Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══ Upload Document Modal ═══ -->
+    <div class="ws-modal-overlay" id="upload-doc-modal">
+        <div class="ws-modal">
+            <div class="ws-modal-header">
+                <h3>⬆ Upload Document</h3>
+                <p>Upload an existing Word document (.doc, .docx) to the workspace.</p>
+            </div>
+            <form id="upload-doc-form" onsubmit="handleUploadDocument(event)">
+                <div class="ws-modal-body">
+                    <div class="ws-upload-zone" id="upload-zone"
+                         onclick="document.getElementById('upload-file-input').click()">
+                        <div class="upload-icon">📂</div>
+                        <h4>Drop your file here or click to browse</h4>
+                        <p>Supports .doc and .docx files</p>
+                        <div class="upload-file-info" id="upload-file-info"></div>
+                    </div>
+                    <input type="file" id="upload-file-input" accept=".doc,.docx" style="display: none;" onchange="handleFileSelect(event)">
+
+                    <div class="ws-input-group" style="margin-top: 18px;">
+                        <label for="upload-doc-title">Title (optional — defaults to filename)</label>
+                        <input type="text" id="upload-doc-title" placeholder="Override document title...">
+                    </div>
+                    <div class="ws-input-group">
+                        <label for="upload-doc-description">Description</label>
+                        <textarea id="upload-doc-description" rows="2" placeholder="Optional description..."></textarea>
+                    </div>
+                </div>
+                <div class="ws-modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeUploadModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="upload-doc-btn" disabled>Upload Document</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══ Edit Document Modal ═══ -->
+    <div class="ws-modal-overlay" id="edit-doc-modal">
+        <div class="ws-modal">
+            <div class="ws-modal-header">
+                <h3>✏️ Edit Document Info</h3>
+                <p>Update the document title, description, or status.</p>
+            </div>
+            <form id="edit-doc-form" onsubmit="handleEditDocument(event)">
+                <div class="ws-modal-body">
+                    <div class="ws-input-group">
+                        <label for="edit-doc-title">Title</label>
+                        <input type="text" id="edit-doc-title" required>
+                    </div>
+                    <div class="ws-input-group">
+                        <label for="edit-doc-description">Description</label>
+                        <textarea id="edit-doc-description" rows="3"></textarea>
+                    </div>
+                    <div class="ws-input-group">
+                        <label for="edit-doc-status">Status</label>
+                        <select id="edit-doc-status">
+                            <option value="draft">📝 Draft</option>
+                            <option value="published">✅ Published</option>
+                        </select>
+                    </div>
+                </div>
+                <div class="ws-modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeEditModal()">Cancel</button>
+                    <button type="submit" class="btn btn-primary btn-sm">Save Changes</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══ Share Document Modal ═══ -->
+    <div class="ws-modal-overlay" id="share-doc-modal">
+        <div class="ws-modal" style="max-width: 600px;">
+            <div class="ws-modal-header">
+                <h3>🔗 Share Document</h3>
+                <p id="share-modal-doc-title">Share this document with clients or employees.</p>
+            </div>
+            <form id="share-doc-form" onsubmit="handleShareDocument(event)">
+                <div class="ws-modal-body">
+                    <div class="ws-input-group">
+                        <label for="share-user-select">Share With</label>
+                        <select id="ws-share-user-select" required>
+                            <option value="">Select a user...</option>
+                        </select>
+                    </div>
+                    <div class="ws-input-group">
+                        <label>Permission</label>
+                        <div class="ws-perm-group">
+                            <label class="ws-perm-option">
+                                <input type="radio" name="ws-share-perm" value="view" checked>
+                                <div class="perm-card">
+                                    <span class="perm-icon">👁</span>
+                                    <span class="perm-label">View Only</span>
+                                    <span class="perm-desc">Can view but not download</span>
+                                </div>
+                            </label>
+                            <label class="ws-perm-option">
+                                <input type="radio" name="ws-share-perm" value="download">
+                                <div class="perm-card">
+                                    <span class="perm-icon">⬇️</span>
+                                    <span class="perm-label">Download</span>
+                                    <span class="perm-desc">Can view and download</span>
+                                </div>
+                            </label>
+                        </div>
+                    </div>
+
+                    <!-- Active shares -->
+                    <div class="ws-active-shares" id="ws-active-shares" style="display: none;">
+                        <div class="shares-title">Active Shares</div>
+                        <div id="ws-shares-list">
+                            <!-- Dynamically populated -->
+                        </div>
+                    </div>
+                </div>
+                <div class="ws-modal-footer">
+                    <button type="button" class="btn btn-secondary btn-sm" onclick="closeShareModal()">Close</button>
+                    <button type="submit" class="btn btn-primary btn-sm" id="share-doc-btn">Share</button>
+                </div>
+            </form>
+        </div>
+    </div>
+
+    <!-- ═══ Delete Confirmation Modal ═══ -->
+    <div class="ws-modal-overlay" id="delete-doc-modal">
+        <div class="ws-modal" style="max-width: 440px;">
+            <div class="ws-modal-header">
+                <h3>⚠️ Delete Document</h3>
+                <p id="delete-doc-message">Are you sure? This will permanently delete the document and revoke all shares.</p>
+            </div>
+            <div class="ws-modal-footer">
+                <button class="btn btn-secondary btn-sm" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger btn-sm" id="confirm-delete-btn" onclick="confirmDeleteDocument()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/workspace.js"></script>
+</body>
+</html>

@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <meta name="description" content="CA Administration Dashboard — Manage your files, upload assets, and view assigned tasks.">
+    <title>Dashboard — CA Administration</title>
+    <link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+    <!-- Sidebar overlay for mobile -->
+    <div class="sidebar-overlay" id="sidebar-overlay" onclick="toggleSidebar()"></div>
+
+    <div class="dashboard">
+        <!-- ═══ Sidebar ═══ -->
+        <aside class="sidebar" id="sidebar">
+            <div class="sidebar-header">
+                <h1>📁 CA Administration</h1>
+
+            </div>
+
+            <nav class="sidebar-nav">
+                <div class="sidebar-section-title">Overview</div>
+                <button class="sidebar-item active" id="nav-all" onclick="filterByFolder(null, this)">
+                    <span class="icon">🏠</span>
+                    <span>All Files</span>
+                    <span class="badge" id="badge-all">0</span>
+                </button>
+
+                <div class="sidebar-section-title">Folders</div>
+                <div id="folder-list">
+                    <!-- Dynamically populated -->
+                </div>
+            </nav>
+
+            <div class="sidebar-footer">
+                <div class="user-info">
+                    <div class="user-avatar" id="user-avatar">U</div>
+                    <div class="details">
+                        <div class="name" id="user-name">User</div>
+                        <div class="email" id="user-email">user@email.com</div>
+                    </div>
+                </div>
+                <a href="/admin" class="btn btn-ghost btn-sm admin-panel-link" id="admin-link" style="display: none;">
+                    ⚙ Admin Panel
+                </a>
+                <button class="btn btn-ghost btn-sm logout-btn" onclick="logout()">
+                    ↩ Sign Out
+                </button>
+            </div>
+        </aside>
+
+        <!-- ═══ Main Content ═══ -->
+        <main class="main-content">
+            <!-- Top Bar -->
+            <div class="top-bar">
+                <div style="display: flex; align-items: center; gap: 12px;">
+                    <button class="mobile-menu-btn" onclick="toggleSidebar()">☰</button>
+                    <h2 id="page-title">Dashboard</h2>
+                </div>
+
+                <div class="search-bar" id="search-bar">
+                    <span class="search-icon">🔍</span>
+                    <input type="text" id="search-input" placeholder="Search files..." oninput="handleSearch(this.value)">
+                </div>
+
+                <div class="top-actions">
+                    <!-- Notification Bell -->
+                    <div style="position: relative;">
+                        <button class="notification-bell" id="notif-bell" onclick="toggleNotificationDropdown()">
+                            🔔
+                            <span class="notif-badge hidden" id="notif-badge-count">0</span>
+                        </button>
+                        <div class="notification-dropdown" id="notif-dropdown">
+                            <div class="notif-header">
+                                <h4>Notifications</h4>
+                                <button onclick="markAllNotificationsRead()">Mark all read</button>
+                            </div>
+                            <div class="notif-list" id="notif-list">
+                                <div class="notif-empty">No notifications yet</div>
+                            </div>
+                        </div>
+                    </div>
+                    <button class="btn btn-primary btn-sm" onclick="scrollToUpload()">
+                        ⬆ Upload
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stat Cards -->
+            <div class="stats-grid" id="stats-grid">
+                <div class="stat-card purple">
+                    <div class="stat-icon">📄</div>
+                    <div class="stat-value" id="stat-total">0</div>
+                    <div class="stat-label">Total Files</div>
+                </div>
+                <div class="stat-card green">
+                    <div class="stat-icon">✅</div>
+                    <div class="stat-value" id="stat-reviewed">0</div>
+                    <div class="stat-label">Reviewed</div>
+                </div>
+                <div class="stat-card amber">
+                    <div class="stat-icon">⏳</div>
+                    <div class="stat-value" id="stat-pending">0</div>
+                    <div class="stat-label">Pending Review</div>
+                </div>
+                <div class="stat-card red">
+                    <div class="stat-icon">📝</div>
+                    <div class="stat-value" id="stat-docs">0</div>
+                    <div class="stat-label">Documents</div>
+                </div>
+            </div>
+
+
+
+            <!-- Assigned Tasks Section -->
+            <div class="tasks-section" style="margin-bottom: var(--sp-6);">
+                <div class="section-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3>📝 Assigned Tasks</h3>
+                        <span class="file-count-badge" id="tasks-badge" style="background: var(--primary-500); color: white;">0</span>
+                    </div>
+                </div>
+                <div class="tasks-grid" id="tasks-container" style="display: flex; flex-direction: column; gap: var(--sp-3);">
+                </div>
+            </div>
+
+            <!-- My Payments Section -->
+            <div class="payments-section" style="margin-bottom: var(--sp-6);">
+                <div class="section-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3>💰 My Payments</h3>
+                    </div>
+                </div>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table"><thead><tr><th>Amount</th><th>Description</th><th>Method</th><th>Status</th><th>Date</th></tr></thead>
+                        <tbody id="my-payments-tbody"><tr><td colspan="5" class="table-empty">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- My Billing Section -->
+            <div class="billing-section" style="margin-bottom: var(--sp-6);">
+                <div class="section-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3>📋 My Billing</h3>
+                    </div>
+                </div>
+                <div class="admin-table-wrapper">
+                    <table class="admin-table"><thead><tr><th>Service</th><th>Amount</th><th>Period</th><th>Status</th><th>Date</th></tr></thead>
+                        <tbody id="my-billing-tbody"><tr><td colspan="5" class="table-empty">Loading...</td></tr></tbody>
+                    </table>
+                </div>
+            </div>
+
+            <!-- Shared With Me Section -->
+            <div class="shared-files-section" style="margin-bottom: var(--sp-6);">
+                <div class="section-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3>📤 Shared With Me</h3>
+                        <span class="file-count-badge" id="shared-files-badge" style="background: var(--primary-500); color: white;">0</span>
+                    </div>
+                </div>
+                <div class="shared-files-grid" id="shared-files-container" style="display: flex; flex-direction: column; gap: var(--sp-3);">
+                    <!-- Dynamically populated -->
+                </div>
+                <div class="empty-state" id="shared-files-empty" style="display: none;">
+                    <div class="empty-icon">📤</div>
+                    <h3>No shared files</h3>
+                    <p>Files shared with you by the admin will appear here</p>
+                </div>
+            </div>
+
+            <!-- Workspace Documents (Shared by Admin) -->
+            <div class="shared-files-section" style="margin-bottom: var(--sp-6);">
+                <div class="section-header">
+                    <div style="display: flex; align-items: center; gap: 8px;">
+                        <h3>📑 Workspace Documents</h3>
+                        <span class="file-count-badge" id="ws-shared-badge" style="background: var(--primary-500); color: white;">0</span>
+                    </div>
+                </div>
+                <div class="shared-files-grid" id="ws-shared-container" style="display: flex; flex-direction: column; gap: var(--sp-3);">
+                    <!-- Dynamically populated -->
+                </div>
+                <div class="empty-state" id="ws-shared-empty" style="display: none;">
+                    <div class="empty-icon">📑</div>
+                    <h3>No workspace documents</h3>
+                    <p>Documents shared with you from the workspace will appear here</p>
+                </div>
+            </div>
+
+            <!-- Upload Section -->
+            <div class="upload-section" id="upload-section">
+                <div class="drop-zone" id="drop-zone">
+                    <div class="upload-icon">☁️</div>
+                    <h3>Drag & drop files here</h3>
+                    <p>or <span class="browse-link" onclick="document.getElementById('file-input').click()">browse files</span> from your computer</p>
+                    <input type="file" id="file-input" multiple onchange="handleFileSelect(this.files)">
+
+                    <div class="upload-options">
+                        <span>Folder:</span>
+                        <select id="folder-select">
+                            <option value="">Auto (detect by type)</option>
+                        </select>
+                    </div>
+
+                    <div class="upload-progress" id="upload-progress">
+                        <div class="progress-bar-container">
+                            <div class="progress-bar" id="progress-bar"></div>
+                        </div>
+                        <div class="progress-text" id="progress-text">Uploading...</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Filter Bar -->
+            <div class="filter-bar" id="filter-bar">
+                <label>Filters:</label>
+                <select id="filter-status" onchange="loadFiles()">
+                    <option value="">All Status</option>
+                    <option value="pending">⏳ Pending</option>
+                    <option value="reviewed">✅ Reviewed</option>
+                </select>
+                <select id="filter-type" onchange="loadFiles()">
+                    <option value="">All Types</option>
+                    <option value="image">🖼️ Images</option>
+                    <option value="video">🎬 Videos</option>
+                    <option value="document">📝 Documents</option>
+                    <option value="other">📦 Others</option>
+                </select>
+            </div>
+
+            <!-- Files Grid -->
+            <div class="files-section" id="files-section">
+                <div class="section-header">
+                    <div style="display: flex; align-items: center;">
+                        <h3 id="files-title">All Files</h3>
+                        <span class="file-count-badge" id="files-count">0 files</span>
+                    </div>
+                </div>
+
+                <div class="file-grid" id="file-grid">
+                    <!-- Dynamically populated -->
+                </div>
+
+                <div class="empty-state" id="empty-state" style="display: none;">
+                    <div class="empty-icon">📂</div>
+                    <h3>No files yet</h3>
+                    <p>Upload your first file using the drop zone above</p>
+                </div>
+            </div>
+        </main>
+    </div>
+
+    <!-- Toast container -->
+    <div class="toast-container" id="toast-container"></div>
+
+    <!-- Delete confirmation modal -->
+    <div class="modal-overlay" id="delete-modal">
+        <div class="modal">
+            <h3>Delete File</h3>
+            <p>Are you sure you want to delete this file? This action cannot be undone.</p>
+            <div class="modal-actions">
+                <button class="btn btn-secondary btn-sm" onclick="closeDeleteModal()">Cancel</button>
+                <button class="btn btn-danger btn-sm" id="confirm-delete-btn" onclick="confirmDelete()">Delete</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- File Detail Modal -->
+    <div class="file-detail-overlay" id="file-detail-overlay" onclick="if(event.target===this)closeFileDetail()">
+        <div class="file-detail-modal" id="file-detail-modal">
+            <div class="fdm-header">
+                <div class="fdm-icon" id="fdm-icon">📄</div>
+                <div class="fdm-title-area">
+                    <h3 id="fdm-file-name">—</h3>
+                    <span id="fdm-file-type" style="font-size: 0.75rem; color: var(--text-secondary);">—</span>
+                </div>
+                <button class="fdm-close" onclick="closeFileDetail()">✕</button>
+            </div>
+            <div class="fdm-body">
+                <div id="fdm-status-banner" class="fdm-status-banner pending">
+                    <div class="status-icon" id="fdm-status-icon">⏳</div>
+                    <div class="status-text">
+                        <strong id="fdm-status-label">Pending Review</strong>
+                        <span id="fdm-status-desc">Your file is being reviewed by the CA</span>
+                    </div>
+                </div>
+                <dl class="fdm-detail-grid" id="fdm-detail-grid">
+                    <!-- Dynamically populated -->
+                </dl>
+            </div>
+            <div class="fdm-footer">
+                <button class="btn btn-secondary btn-sm" onclick="closeFileDetail()">Close</button>
+                <button class="btn btn-primary btn-sm" id="fdm-open-btn" onclick="openFileFromDetail()" style="display:none;">⬇ Download</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="js/api.js"></script>
+    <script src="js/dashboard.js"></script>
+</body>
+</html>
