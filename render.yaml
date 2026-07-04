@@ -8,7 +8,7 @@ services:
     name: ca-administration
     env: python
     buildCommand: "pip install --upgrade pip setuptools wheel && pip install -r requirements.txt"
-    startCommand: "cd DaM/backend && python -c 'from database import init_db; init_db()' && gunicorn -w 4 -b 0.0.0.0:$PORT 'app:create_app()'"
+    startCommand: "bash start.sh"
     plan: free
     envVars:
       - key: DATABASE_URL
